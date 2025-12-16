@@ -109,7 +109,7 @@ class LabelController extends Controller
                     'lot_no' => $label->lot_no,
                     'model' => $prodHeader->model,
                     'unique_no' => $prodHeader->unique_no,
-                    'part_no' => $prodHeader->old_partno ?? $prodHeader->item,
+                    'part_no' => $kodeErp, // Same as kode_erp from prod_label
                     'description' => $prodHeader->description,
                     'date' => $year,
                     'qty' => $qty,

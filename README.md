@@ -241,11 +241,13 @@ ERP-CODE-123;100;251100468384;CUSTOMER-ABC;251201063
 Data ini ditampilkan di atas QR code saat printing.
 
 **Mapping**:
-- `kode_erp` → dari `partno` (prod_label)
+- `kode_erp` → dari `partno` (prod_label) - sama dengan `part_no`
 - `qty` → hasil perhitungan `qty_order / snp`
 - `lot_no` → dari `lot_no` (prod_label)
 - `customer` → dari `customer` (prod_header)
 - `prod_no` → production number
+
+**Note**: Field `part_no` di response juga menggunakan nilai yang sama dengan `kode_erp`.
 
 ### 2. Print Status Management
 - Label dengan `print_status = 0` akan muncul di endpoint `/labels/printable`

@@ -235,7 +235,7 @@ Accept: application/json
 - `lot_no`: Nomor lot
 - `model`: Model produk
 - `unique_no`: Nomor unik
-- `part_no`: Part number (dari old_partno atau item)
+- `part_no`: Part number / Kode ERP (dari partno di prod_label, sama dengan kode_erp)
 - `description`: Deskripsi produk
 - `date`: Tahun produksi (dari prod_index)
 - `qty`: Quantity (qty_order / snp)
@@ -245,7 +245,7 @@ Accept: application/json
   ```
   kode_erp;qty;lot_no;customer;prod_no
   ```
-  - `kode_erp`: Dari partno (prod_label)
+  - `kode_erp`: Dari partno (prod_label) - sama dengan part_no
   - `qty`: Hasil perhitungan qty_order / snp
   - `lot_no`: Dari prod_label
   - `customer`: Dari prod_header
