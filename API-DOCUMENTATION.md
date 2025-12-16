@@ -150,6 +150,10 @@ Accept: application/json
 **Query Parameters**:
 - `prod_index` (optional): Filter by production period
 
+**Filters Applied**:
+- `sts` IN (60, 70)
+- Has at least 1 `prod_label` with `status = 'NS'` AND `print_status = 0`
+
 **Success Response** (200):
 ```json
 {
@@ -177,6 +181,7 @@ Accept: application/json
   ]
 }
 ```
+
 
 ---
 
@@ -451,6 +456,7 @@ curl.exe -X POST http://localhost:8000/api/labels/mark-printed \
 4. **Production Status**:
    - Hanya prod_header dengan `sts = 60` atau `sts = 70` yang bisa di-print
    - Hanya prod_label dengan `status = 'NS'` yang bisa di-print
+   - **Prod_header hanya ditampilkan di list jika memiliki minimal 1 prod_label dengan `status = 'NS'` dan `print_status = 0`**
 
 ---
 

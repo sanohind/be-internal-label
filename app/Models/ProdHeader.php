@@ -32,4 +32,12 @@ class ProdHeader extends Model
         'warehouse',
         'divisi',
     ];
+
+    /**
+     * Get the prod labels for the prod header.
+     */
+    public function prodLabels()
+    {
+        return $this->hasMany(ProdLabel::class, 'prod_no', 'prod_no');
+    }
 }

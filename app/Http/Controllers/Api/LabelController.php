@@ -11,7 +11,7 @@ class LabelController extends Controller
 {
     /**
      * Get list of prod headers that are ready for printing
-     * Filter: sts IN (60, 70)
+     * Filter: sts IN (60, 70) AND has at least 1 prod_label with status='NS' and print_status=0
      */
     public function listProdHeaders(Request $request)
     {
@@ -19,7 +19,11 @@ class LabelController extends Controller
             // Optional filter by prod_index (period)
             $prodIndex = $request->input('prod_index');
 
-            $query = ProdHeader::whereIn('sts', [60, 70]);
+            $query = ProdHeader::whereIn('sts', [60, 70])
+                ->whereHas('prodLabels', function ($query) {
+                    $query->where('status', 'NS')
+                        ->where('print_status', 0);
+                });
 
             if ($prodIndex) {
                 $query->where('prod_index', $prodIndex);
