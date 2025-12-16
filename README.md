@@ -157,9 +157,10 @@ curl.exe -X POST http://localhost:8000/api/login \
 
 ### Manual Testing
 Lihat dokumentasi lengkap:
-- [AUTHENTICATION.md](AUTHENTICATION.md) - Authentication guide
-- [API-DOCUMENTATION.md](API-DOCUMENTATION.md) - Complete API reference
-- [test-mark-printed.md](test-mark-printed.md) - Mark printed testing guide
+- **[API-DOCUMENTATION.md](API-DOCUMENTATION.md)** - Complete API reference
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Production deployment guide
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Quick fix untuk common issues
+- **[PRODUCTION-FIX-SUMMARY.md](PRODUCTION-FIX-SUMMARY.md)** - Summary of production fixes
 
 ---
 
