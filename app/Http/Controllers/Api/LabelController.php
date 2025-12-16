@@ -92,6 +92,18 @@ class LabelController extends Controller
                     ? round($prodHeader->qty_order / $prodHeader->snp, 2)
                     : 0;
 
+                // Prepare semicolon-separated data for printing above QR code
+                // Format: kode_erp;qty;lot_no;customer;prod_no
+                $kodeErp = $label->partno ?? '';
+                $customer = $prodHeader->customer ?? '';
+                $printData = implode(';', [
+                    $kodeErp,
+                    $qty,
+                    $label->lot_no,
+                    $customer,
+                    $prodHeader->prod_no
+                ]);
+
                 return [
                     'label_id' => $label->id,
                     'lot_no' => $label->lot_no,
@@ -103,6 +115,7 @@ class LabelController extends Controller
                     'qty' => $qty,
                     'lot_date' => $label->lot_date,
                     'lot_qty' => $label->lot_qty,
+                    'print_data' => $printData, // Data untuk ditampilkan di atas QR code
                 ];
             });
 

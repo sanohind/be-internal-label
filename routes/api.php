@@ -2,18 +2,26 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
-
 use App\Http\Controllers\Api\ErpSyncController;
 use App\Http\Controllers\Api\LabelController;
+use App\Http\Controllers\Api\AuthController;
 
-Route::get('/sync/prod-header', [ErpSyncController::class, 'syncProdHeaders']);
-Route::get('/sync/prod-label', [ErpSyncController::class, 'syncProdLabels']);
+// Public routes - Authentication
+Route::post('/login', [AuthController::class, 'login']);
 
-// Label Printing APIs
-Route::get('/labels/prod-headers', [LabelController::class, 'listProdHeaders']);
-Route::get('/labels/printable', [LabelController::class, 'getPrintableLabels']);
-Route::post('/labels/mark-printed', [LabelController::class, 'markAsPrinted']);
+// Protected routes - Require authentication
+Route::middleware('auth:sanctum')->group(function () {
+    // Auth routes
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
+
+    // ERP Sync routes
+    Route::get('/sync/prod-header', [ErpSyncController::class, 'syncProdHeaders']);
+    Route::get('/sync/prod-label', [ErpSyncController::class, 'syncProdLabels']);
+
+    // Label Printing routes
+    Route::get('/labels/prod-headers', [LabelController::class, 'listProdHeaders']);
+    Route::get('/labels/printable', [LabelController::class, 'getPrintableLabels']);
+    Route::post('/labels/mark-printed', [LabelController::class, 'markAsPrinted']);
+});
+
