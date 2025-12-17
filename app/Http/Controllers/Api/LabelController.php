@@ -89,7 +89,7 @@ class LabelController extends Controller
             // Prepare data for PDF generation
             $labelData = $labels->map(function ($label) use ($prodHeader) {
                 // Extract year from prod_index (e.g., 2512 -> 2025)
-                $year = '20' . substr($prodHeader->prod_index, 0, 2);
+                $year = '';
 
                 // Calculate qty: qty_order / snp
                 $qty = $prodHeader->snp > 0
@@ -111,6 +111,7 @@ class LabelController extends Controller
                 return [
                     'label_id' => $label->id,
                     'lot_no' => $label->lot_no,
+                    'customer' => $prodHeader->customer,
                     'model' => $prodHeader->model,
                     'unique_no' => $prodHeader->unique_no,
                     'part_no' => $kodeErp, // Same as kode_erp from prod_label
