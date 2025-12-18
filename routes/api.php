@@ -18,6 +18,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // ERP Sync routes
     Route::get('/sync/prod-header', [ErpSyncController::class, 'syncProdHeaders']);
     Route::get('/sync/prod-label', [ErpSyncController::class, 'syncProdLabels']);
+    Route::post('/sync/manual', [ErpSyncController::class, 'syncManual']); // Manual sync via queue
 
     // Label Printing routes
     Route::get('/labels/prod-headers', [LabelController::class, 'listProdHeaders']);

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 
 use App\Models\ProdHeader;
 use App\Models\ProdLabel;
+use App\Jobs\SyncProdData;
 
 class ErpSyncController extends Controller
 {
@@ -160,5 +161,36 @@ class ErpSyncController extends Controller
             'message' => $message,
             'count' => $syncedCount
         ]);
+    }
+
+    /**
+     * Trigger manual sync via queue job (non-blocking)
+     * This method dispatches a job and returns immediately
+     */
+    public function syncManual(Request $request)
+    {
+        // Validate prod_index if provided
+        $request->validate([
+            'prod_index' => 'nullable|string|size:4', // Format: YYMM (e.g., 2512)
+        ]);
+
+        $prodIndex = $request->input('prod_index', date('ym'));
+
+        try {
+            // Dispatch the sync job to the queue
+            SyncProdData::dispatch($prodIndex);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Sync job has been queued for period: {$prodIndex}. The process will run in the background.",
+                'prod_index' => $prodIndex,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to queue sync job',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
