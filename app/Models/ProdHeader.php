@@ -26,6 +26,7 @@ class ProdHeader extends Model
         'back_no',
         'common_id',
         'karakteristik',
+        'color_code',
         'snp',
         'sts',
         'status',

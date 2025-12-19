@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->string('back_no')->nullable()->after('sanoh_code');
             $table->string('common_id')->nullable()->after('back_no');
             $table->string('karakteristik')->nullable()->after('common_id');
+            $table->string('color_code')->nullable()->after('karakteristik');
         });
     }
 
@@ -25,7 +26,7 @@ return new class extends Migration {
     {
         Schema::table('prod_header', function (Blueprint $table) {
             // Drop the columns if rolling back
-            $table->dropColumn(['back_no', 'common_id', 'karakteristik']);
+            $table->dropColumn(['back_no', 'common_id', 'karakteristik', 'color_code']);
         });
     }
 };
