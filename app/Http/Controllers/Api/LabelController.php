@@ -120,6 +120,9 @@ class LabelController extends Controller
                     'qty' => $qty,
                     'lot_date' => $label->lot_date,
                     'lot_qty' => $label->lot_qty,
+                    'back_no' => $prodHeader->back_no,
+                    'tmmin_id' => $prodHeader->common_id, // common_id as tmmin_id
+                    'karakteristik' => $prodHeader->karakteristik,
                     'print_data' => $printData, // Data untuk ditampilkan di atas QR code
                 ];
             });
