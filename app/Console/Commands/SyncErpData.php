@@ -30,19 +30,19 @@ class SyncErpData extends Command
     {
         $prodIndex = $this->option('prod_index') ?? date('ym');
 
-        $this->info("Starting ERP sync for period: {$prodIndex}");
+        $this->info("Starting ERP sync for period >= {$prodIndex}");
         $this->newLine();
 
-        // Sync Prod Headers
-        $this->info('Syncing Prod Headers...');
+        // Sync Prod Headers (with sts filter 60 or 70)
+        $this->info('Syncing Prod Headers (sts = 60 or 70)...');
         $headerResult = $this->syncProdHeaders($prodIndex);
         $this->line("  → {$headerResult['message']}");
         $this->line("  → Records synced: {$headerResult['count']}");
         $this->newLine();
 
-        // Sync Prod Labels
-        $this->info('Syncing Prod Labels...');
-        $labelResult = $this->syncProdLabels($prodIndex);
+        // Sync Prod Labels (only for synced prod_no from headers)
+        $this->info('Syncing Prod Labels (based on synced headers)...');
+        $labelResult = $this->syncProdLabels($prodIndex, $headerResult['synced_prod_nos'] ?? []);
         $this->line("  → {$labelResult['message']}");
         $this->line("  → Records synced: {$labelResult['count']}");
         $this->newLine();
@@ -62,30 +62,34 @@ class SyncErpData extends Command
         $status = 'failed';
         $message = '';
         $errorDetails = null;
+        $syncedProdNos = [];
 
         try {
+            // Fetch data with prod_index >= current period and sts = 60 or 70
             $erpData = \DB::connection('sqlsrv')
                 ->table('view_prod_header')
-                ->where('prod_index', $prodIndex)
+                ->where('prod_index', '>=', $prodIndex)
+                ->whereIn('sts', [60, 70])
                 ->get();
 
             if ($erpData->isEmpty()) {
-                $message = "No data found in ERP view_prod_header for period: {$prodIndex}";
+                $message = "No data found in ERP view_prod_header for period >= {$prodIndex} with sts 60 or 70";
                 $status = 'success';
             } else {
-                \DB::transaction(function () use ($erpData, &$syncedCount) {
+                \DB::transaction(function () use ($erpData, &$syncedCount, &$syncedProdNos) {
                     foreach ($erpData as $item) {
                         $itemArray = (array) $item;
                         ProdHeader::updateOrCreate(
                             ['prod_no' => $itemArray['prod_no']],
                             $itemArray
                         );
+                        $syncedProdNos[] = $itemArray['prod_no'];
                         $syncedCount++;
                     }
                 });
 
                 $status = 'success';
-                $message = "Prod Headers synced successfully";
+                $message = "Prod Headers synced successfully (sts 60/70, prod_index >= {$prodIndex})";
             }
         } catch (\Exception $e) {
             $message = 'Failed to sync Prod Headers';
@@ -108,10 +112,11 @@ class SyncErpData extends Command
             'status' => $status,
             'message' => $message,
             'count' => $syncedCount,
+            'synced_prod_nos' => $syncedProdNos,
         ];
     }
 
-    private function syncProdLabels($prodIndex)
+    private function syncProdLabels($prodIndex, $syncedProdNos = [])
     {
         $syncedCount = 0;
         $status = 'failed';
@@ -119,28 +124,36 @@ class SyncErpData extends Command
         $errorDetails = null;
 
         try {
-            $erpData = \DB::connection('sqlsrv')
-                ->table('view_prod_label')
-                ->where('prod_index', $prodIndex)
-                ->get();
-
-            if ($erpData->isEmpty()) {
-                $message = "No data found in ERP view_prod_label for period: {$prodIndex}";
+            // If no prod_nos were synced from headers, skip label sync
+            if (empty($syncedProdNos)) {
+                $message = "No prod_no to sync from headers, skipping label sync";
                 $status = 'success';
             } else {
-                \DB::transaction(function () use ($erpData, &$syncedCount) {
-                    foreach ($erpData as $item) {
-                        $itemArray = (array) $item;
-                        ProdLabel::updateOrCreate(
-                            ['lot_no' => $itemArray['lot_no']],
-                            $itemArray
-                        );
-                        $syncedCount++;
-                    }
-                });
+                // Fetch labels with prod_index >= current period and prod_no in synced headers
+                $erpData = \DB::connection('sqlsrv')
+                    ->table('view_prod_label')
+                    ->where('prod_index', '>=', $prodIndex)
+                    ->whereIn('prod_no', $syncedProdNos)
+                    ->get();
 
-                $status = 'success';
-                $message = "Prod Labels synced successfully";
+                if ($erpData->isEmpty()) {
+                    $message = "No data found in ERP view_prod_label for synced prod_nos";
+                    $status = 'success';
+                } else {
+                    \DB::transaction(function () use ($erpData, &$syncedCount) {
+                        foreach ($erpData as $item) {
+                            $itemArray = (array) $item;
+                            ProdLabel::updateOrCreate(
+                                ['lot_no' => $itemArray['lot_no']],
+                                $itemArray
+                            );
+                            $syncedCount++;
+                        }
+                    });
+
+                    $status = 'success';
+                    $message = "Prod Labels synced successfully (for " . count($syncedProdNos) . " prod_nos)";
+                }
             }
         } catch (\Exception $e) {
             $message = 'Failed to sync Prod Labels';

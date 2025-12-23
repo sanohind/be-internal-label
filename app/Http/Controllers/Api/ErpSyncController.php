@@ -19,16 +19,18 @@ class ErpSyncController extends Controller
         $status = 'failed';
         $message = '';
         $errorDetails = null;
+        $syncedProdNos = [];
 
         try {
-            // 1. Fetch data from ERP (SQL Server)
+            // 1. Fetch data from ERP (SQL Server) with prod_index >= current period and sts = 60 or 70
             $erpData = \DB::connection('sqlsrv')
                 ->table('view_prod_header')
-                ->where('prod_index', $prodIndex)
+                ->where('prod_index', '>=', $prodIndex)
+                ->whereIn('sts', [60, 70])
                 ->get();
 
             if ($erpData->isEmpty()) {
-                $message = "No data found in ERP view_prod_header for period: $prodIndex";
+                $message = "No data found in ERP view_prod_header for period >= $prodIndex with sts 60 or 70";
                 $status = 'success';
 
                 // Log the sync attempt
@@ -45,19 +47,20 @@ class ErpSyncController extends Controller
             }
 
             // 2. Sync to Local Database
-            \DB::transaction(function () use ($erpData, &$syncedCount) {
+            \DB::transaction(function () use ($erpData, &$syncedCount, &$syncedProdNos) {
                 foreach ($erpData as $item) {
                     $itemArray = (array) $item;
                     ProdHeader::updateOrCreate(
                         ['prod_no' => $itemArray['prod_no']],
                         $itemArray
                     );
+                    $syncedProdNos[] = $itemArray['prod_no'];
                     $syncedCount++;
                 }
             });
 
             $status = 'success';
-            $message = "Prod Headers for period $prodIndex synced successfully.";
+            $message = "Prod Headers for period >= $prodIndex (sts 60/70) synced successfully.";
 
         } catch (\Exception $e) {
             $message = 'Failed to sync ERP data.';
@@ -84,7 +87,8 @@ class ErpSyncController extends Controller
 
         return response()->json([
             'message' => $message,
-            'count' => $syncedCount
+            'count' => $syncedCount,
+            'synced_prod_nos' => $syncedProdNos
         ]);
     }
 
@@ -98,13 +102,38 @@ class ErpSyncController extends Controller
         $errorDetails = null;
 
         try {
+            // First, get the synced prod_nos from headers with sts 60 or 70
+            $syncedProdNos = ProdHeader::where('prod_index', '>=', $prodIndex)
+                ->whereIn('sts', [60, 70])
+                ->pluck('prod_no')
+                ->toArray();
+
+            if (empty($syncedProdNos)) {
+                $message = "No prod_no found in local headers with sts 60/70 for period >= $prodIndex";
+                $status = 'success';
+
+                // Log the sync attempt
+                \App\Models\SyncLog::create([
+                    'sync_type' => 'prod_label',
+                    'prod_index' => $prodIndex,
+                    'records_synced' => 0,
+                    'status' => $status,
+                    'message' => $message,
+                    'synced_at' => now(),
+                ]);
+
+                return response()->json(['message' => $message]);
+            }
+
+            // Fetch labels with prod_index >= current period and prod_no in synced headers
             $erpData = \DB::connection('sqlsrv')
                 ->table('view_prod_label')
-                ->where('prod_index', $prodIndex)
+                ->where('prod_index', '>=', $prodIndex)
+                ->whereIn('prod_no', $syncedProdNos)
                 ->get();
 
             if ($erpData->isEmpty()) {
-                $message = "No data found in ERP view_prod_label for period: $prodIndex";
+                $message = "No data found in ERP view_prod_label for synced prod_nos";
                 $status = 'success';
 
                 // Log the sync attempt
@@ -132,7 +161,7 @@ class ErpSyncController extends Controller
             });
 
             $status = 'success';
-            $message = "Prod Labels for period $prodIndex synced successfully.";
+            $message = "Prod Labels for period >= $prodIndex (" . count($syncedProdNos) . " prod_nos) synced successfully.";
 
         } catch (\Exception $e) {
             $message = 'Failed to sync ERP data.';
