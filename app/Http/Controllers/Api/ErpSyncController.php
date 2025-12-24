@@ -125,14 +125,22 @@ class ErpSyncController extends Controller
                 return response()->json(['message' => $message]);
             }
 
-            // Fetch labels with prod_index >= current period and prod_no in synced headers
-            $erpData = \DB::connection('sqlsrv')
-                ->table('view_prod_label')
-                ->where('prod_index', '>=', $prodIndex)
-                ->whereIn('prod_no', $syncedProdNos)
-                ->get();
+            // SQL Server has a limit of 2100 parameters, so we need to chunk the prod_nos
+            // We'll use chunks of 2000 to be safe
+            $chunkSize = 2000;
+            $allErpData = collect();
 
-            if ($erpData->isEmpty()) {
+            foreach (array_chunk($syncedProdNos, $chunkSize) as $chunk) {
+                $chunkData = \DB::connection('sqlsrv')
+                    ->table('view_prod_label')
+                    ->where('prod_index', '>=', $prodIndex)
+                    ->whereIn('prod_no', $chunk)
+                    ->get();
+
+                $allErpData = $allErpData->merge($chunkData);
+            }
+
+            if ($allErpData->isEmpty()) {
                 $message = "No data found in ERP view_prod_label for synced prod_nos";
                 $status = 'success';
 
@@ -149,8 +157,8 @@ class ErpSyncController extends Controller
                 return response()->json(['message' => $message]);
             }
 
-            \DB::transaction(function () use ($erpData, &$syncedCount) {
-                foreach ($erpData as $item) {
+            \DB::transaction(function () use ($allErpData, &$syncedCount) {
+                foreach ($allErpData as $item) {
                     $itemArray = (array) $item;
                     ProdLabel::updateOrCreate(
                         ['lot_no' => $itemArray['lot_no']],
@@ -211,7 +219,7 @@ class ErpSyncController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => "Sync job has been queued for period: {$prodIndex}. The process will run in the background.",
+                'message' => "Sync job has been queued for period >= {$prodIndex} (with sts 60/70). The process will run in the background.",
                 'prod_index' => $prodIndex,
             ]);
         } catch (\Exception $e) {
