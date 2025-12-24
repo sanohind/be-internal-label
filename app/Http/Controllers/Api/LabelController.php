@@ -91,10 +91,8 @@ class LabelController extends Controller
                 // Extract year from prod_index (e.g., 2512 -> 2025)
                 $year = '';
 
-                // Calculate qty: qty_order / snp
-                $qty = $prodHeader->snp > 0
-                    ? round($prodHeader->qty_order / $prodHeader->snp, 2)
-                    : 0;
+                // Use snp value directly as qty
+                $qty = $prodHeader->snp ?? 0;
 
                 // Prepare semicolon-separated data for printing above QR code
                 // Format: old_partno;qty;lot_no;customer;prod_no
@@ -114,7 +112,7 @@ class LabelController extends Controller
                     'customer' => $prodHeader->customer,
                     'model' => $prodHeader->model,
                     'unique_no' => $prodHeader->unique_no,
-                    'part_no' => $prodHeader->old_partno, 
+                    'part_no' => $prodHeader->old_partno,
                     'description' => $prodHeader->description,
                     'date' => $year,
                     'qty' => $qty,
