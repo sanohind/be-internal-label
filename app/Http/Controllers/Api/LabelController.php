@@ -95,11 +95,11 @@ class LabelController extends Controller
                 $qty = $prodHeader->snp ?? 0;
 
                 // Prepare semicolon-separated data for printing above QR code
-                // Format: old_partno;qty;lot_no;customer;prod_no
-                $partNo = $prodHeader->old_partno ?? '';
+                // Format: item;qty;lot_no;customer;prod_no
+                $kodeErp = $prodHeader->item ?? '';
                 $customer = $prodHeader->customer ?? '';
                 $printData = implode(';', [
-                    $partNo,
+                    $kodeErp,
                     $qty,
                     $label->lot_no,
                     $customer,
